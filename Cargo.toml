@@ -1,5 +1,5 @@
 [package]
-name = "firstnan"
+name = "literal-sandbox"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 nannou = "0.18.1"
+rand = "0.8.5"
