@@ -1,6 +1,6 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CellType {
-    Air,
+    Void,
     Sand,
     Stone,
 }
@@ -14,8 +14,8 @@ pub struct Cell {
 }
 
 impl Cell {
-    pub fn update(&self, mut api: Api) {
-        if self.cell_type == CellType::Air {
+    pub fn update(self, cell: Cell, mut api: Api) {
+        if cell.cell_type == CellType::Void {
             return;
         }
 
@@ -24,30 +24,37 @@ impl Cell {
         let dr_neighbor = api.get_rel(1, 1);
        
        
-        if down_neighbor.cell_type == CellType::Air {
+        if down_neighbor.cell_type == CellType::Void {
             api.set_rel(0,0,BLANK_CELL);
-            api.set_rel(0,1,*self); 
-        } else
-
-        // Down left
-        if dl_neighbor.cell_type == CellType::Air {
-            api.set_rel(0,0,BLANK_CELL);
-            api.set_rel(-1,1,*self); 
+            api.set_rel(0,1,cell); 
         } else
 
 
-
-        // Down Right
-        if dr_neighbor.cell_type == CellType::Air {
-            api.set_rel(0,0,BLANK_CELL);
-            api.set_rel(1,1,*self); 
-        }
+       // if rand::random() {
+            // Down left first
+            if dl_neighbor.cell_type == CellType::Void {
+                api.set_rel(0,0,BLANK_CELL);
+                api.set_rel(-1,1,cell); 
+            } else if dr_neighbor.cell_type == CellType::Void {
+                api.set_rel(0,0,BLANK_CELL);
+                api.set_rel(1,1,cell); 
+            }
+       //  } //else {
+        //         // Down right first
+        //         if dr_neighbor.cell_type == CellType::Void {
+        //             api.set_rel(0,0,BLANK_CELL);
+        //             api.set_rel(-1,1,cell); 
+        //         } else if dl_neighbor.cell_type == CellType::Void {
+        //             api.set_rel(0,0,BLANK_CELL);
+        //             api.set_rel(1,1,cell); 
+        //         }
+        // }
 
     }
 }
 
 pub static BLANK_CELL: Cell = Cell {
-    cell_type: CellType::Air,
+    cell_type: CellType::Void,
     data1: 0,
     data2: 0,
     data3: 0,
@@ -87,7 +94,7 @@ impl<'a> Api<'a> {
         let x = self.x + dx;
         let y = self.y + dy;
 
-        if x >= self.world.width || y >= self.world.height {
+        if x < 0 || x >= self.world.width || y < 0 || y >= self.world.height {
             return STONE_CELL;
         }
 
@@ -151,7 +158,7 @@ impl World {
         // update cell by trying to move down or diagonally down
     }
 
-    fn update_cell(cell: Cell, api: Api) {
-        cell.update(api);
+    fn update_cell(cell: Cell, mut api: Api) {
+        cell.update(cell, api);
     }
 }

@@ -1,12 +1,14 @@
 use nannou::prelude::*;
-
 mod cell_lib;
 use cell_lib::{Cell,CellType,World};
 use cell_lib::{SAND_CELL};
+use std::any::type_name;
+use std::cell;
 
+static WIDTH_IN_CELLS: i32 = 160;
+static HEIGHT_IN_CELLS: i32 = 160;
 
-static WIDTH: i32 = 40;
-static HEIGHT: i32 = 40;
+static CELLS_SIZE: f32 = 4.0;
 
 // GOAL: Falling sand with static solids
 // Next goal: Water, Quicksand?
@@ -24,61 +26,134 @@ static HEIGHT: i32 = 40;
 // Resizing
 // WASM
 // Perf optimization
+
 struct Model {
     world: World,
+    cell_width: f32,
+    cell_height: f32,
+    pos_x: f32,
+    pos_y: f32,
+    mouse_down: bool,
 }
 
 fn model(app: &App) -> Model {
-    let mut world = World::new(WIDTH,HEIGHT);
-
-    // Drop some sand for giggles
-    for x in 15..22 {
-        for y in 0..10 {
-                if (rand::random() || rand::random()) {
-                    let world_idx = world.get_index(x,y);
-                    world.cells[world_idx] = SAND_CELL;
-                }
-        }
-    }
+    let mut world: World = World::new(WIDTH_IN_CELLS, HEIGHT_IN_CELLS);
     
-    Model { world: world }
+    app.new_window().event(event).view(view).build().unwrap();
+ 
+    // calculate width and height in cells
+    let win: Rect = app.window_rect();
+    let cell_width: f32 = win.w() / WIDTH_IN_CELLS as f32;
+    let cell_height: f32 = win.h() / HEIGHT_IN_CELLS as f32;
+    
+     Model { 
+        world,
+        cell_width,
+        cell_height,
+        pos_x: 0.0,
+        pos_y: 0.0,
+        mouse_down: false,
+     }
 }
 
+fn cell_for_coords(_model: &mut Model, x: f32, y: f32) -> (i32, i32) {
+
+    let new_x = (x / _model.cell_width) as i32;
+    let new_y = (y / _model.cell_height) as i32;
+
+    (new_x, new_y)
+}
+
+fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
+    
+    match _event {
+        MouseMoved(_pos) => {
+            if _model.mouse_down {
+    
+                let win = _app.window_rect();
+                
+                // Translate to Top-Left origin
+                let xx = _model.pos_x + (win.w() / 2.0);
+                let yy = (win.h() / 2.0) - _model.pos_y;
+
+                // Get equivalent  X/Y cell position
+                let (xxx, yyy) = cell_for_coords(_model, xx, yy);
+
+                
+                let world_idx: usize = _model.world.get_index(xxx,yyy);
+                _model.world.cells[world_idx] = SAND_CELL;
+
+            }
+            
+             _model.pos_x = _pos.x;
+             _model.pos_y = _pos.y;
+        }
+        MousePressed(_button) => { 
+            
+            let win = _app.window_rect();
+            
+            // Translate to Top-Left origin
+            let xx = _model.pos_x + (win.w() / 2.0);
+            let yy = (win.h() / 2.0) - _model.pos_y;
+            let (xxx, yyy) = cell_for_coords(_model, xx, yy);
+
+            let world_idx: usize = _model.world.get_index(xxx,yyy);
+            _model.world.cells[world_idx] = SAND_CELL;
+
+            _model.mouse_down = true;
+            // println!("X: {}, Y: {}", xx, yy);
+            // println!("CellXY: {}, {}", xxx, yyy);
+        }
+        MouseReleased(_button) => {
+            _model.mouse_down = false;
+        }
+        _ => {}
+    };
+
+    
+}
 
 
 fn main() {
-
-    nannou::app(model).update(update_model).simple_window(view).run()
+    nannou::app(model).update(update_model).run()
 }
 
 fn update_model(app: &App, _model: &mut Model, update: nannou::event::Update){
+
+    //event(event).
     //println!("UPDATING MODEL");
     _model.world.update();
 }
 
 fn view(app: &App, _model: &Model, frame: Frame) {
-    // // Begin drawing
-    
     let win = app.window_rect();
-    
     let t = app.time;
+
     let draw = app.draw();
     
-    // Clear the background to black.
+    // Set the background to black.
     draw.background().color(BLACK);
-    
-    // Draw a pixel for every cell that is sand
-    for x in 0..WIDTH {
-        for y in 0..HEIGHT {
-            
-            let cell_type = _model.world.get_cell(x,y).cell_type;
-            let xx: f32 = (x * 10) as f32;
-            let yy: f32 = (y * 10) as f32;
 
-            if cell_type == CellType::Sand {
-                draw.rect().x_y(xx,HEIGHT as f32 - yy).w_h(10.0, 10.0).color(YELLOW);
-            } else {
-                draw.rect().x_y(xx, HEIGHT as f32 - yy).w_h(10.0, 10.0).color(DARKBLUE);
+    let r = Rect::from_w_h(win.w(),win.h()).top_left_of(win);
+ 
+    // Draw a pixel for every cell that is sand
+    for x in 0..WIDTH_IN_CELLS {
+        for y in 0..HEIGHT_IN_CELLS {
+            let cell_type = _model.world.get_cell(x,y).cell_type;
+            
+            let xx: f32 = x as f32 * _model.cell_width;
+            let yy: f32 = y as f32 * _model.cell_height;
+
+            match cell_type {
+                CellType::Sand => { 
+                    draw.rect()
+                        .x_y((win.left() + xx + _model.cell_width), (win.top() - yy))
+                        .w_h(_model.cell_width, _model.cell_height)
+                        .color(YELLOW);                    
+                },
+                _ => { 
+                    // draw.rect().x_y(xx-win.w()/2.0,HEIGHT_IN_CELLS as f32 - yy ).w_h(CELLS_SIZE, CELLS_SIZE).color(BLUE); 
+                },
             }
         }
     }
