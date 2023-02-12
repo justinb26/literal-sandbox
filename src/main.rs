@@ -5,8 +5,8 @@ use cell_lib::{SAND_CELL};
 use std::any::type_name;
 use std::cell;
 
-static WIDTH_IN_CELLS: i32 = 160;
-static HEIGHT_IN_CELLS: i32 = 160;
+static WIDTH_IN_CELLS: i32 = 80;
+static HEIGHT_IN_CELLS: i32 = 80;
 
 static CELLS_SIZE: f32 = 4.0;
 
@@ -33,14 +33,14 @@ struct Model {
     cell_height: f32,
     pos_x: f32,
     pos_y: f32,
-    mouse_down: bool,
+    mouse_down: i32,
 }
 
 fn model(app: &App) -> Model {
     let mut world: World = World::new(WIDTH_IN_CELLS, HEIGHT_IN_CELLS);
-    
+    app.set_loop_mode(LoopMode::rate_fps(2.0));
     app.new_window().event(event).view(view).build().unwrap();
- 
+    
     // calculate width and height in cells
     let win: Rect = app.window_rect();
     let cell_width: f32 = win.w() / WIDTH_IN_CELLS as f32;
@@ -52,7 +52,7 @@ fn model(app: &App) -> Model {
         cell_height,
         pos_x: 0.0,
         pos_y: 0.0,
-        mouse_down: false,
+        mouse_down: 0,
      }
 }
 
@@ -68,17 +68,17 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
     
     match _event {
         MouseMoved(_pos) => {
-            if _model.mouse_down {
+            if _model.mouse_down == 1 {
     
                 let win = _app.window_rect();
                 
                 // Translate to Top-Left origin
                 let xx = _model.pos_x + (win.w() / 2.0);
-                let yy = (win.h() / 2.0) - _model.pos_y;
+                let yy = clamp((win.h() / 2.0) - _model.pos_y, 0.0, win.h());
 
                 // Get equivalent  X/Y cell position
                 let (xxx, yyy) = cell_for_coords(_model, xx, yy);
-
+                println!("{} {}", xxx, yyy);
                 
                 let world_idx: usize = _model.world.get_index(xxx,yyy);
                 _model.world.cells[world_idx] = SAND_CELL;
@@ -95,17 +95,16 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
             // Translate to Top-Left origin
             let xx = _model.pos_x + (win.w() / 2.0);
             let yy = (win.h() / 2.0) - _model.pos_y;
+            
             let (xxx, yyy) = cell_for_coords(_model, xx, yy);
 
             let world_idx: usize = _model.world.get_index(xxx,yyy);
             _model.world.cells[world_idx] = SAND_CELL;
 
-            _model.mouse_down = true;
-            // println!("X: {}, Y: {}", xx, yy);
-            // println!("CellXY: {}, {}", xxx, yyy);
+            _model.mouse_down = _button as i32;
         }
         MouseReleased(_button) => {
-            _model.mouse_down = false;
+            _model.mouse_down = 0;
         }
         _ => {}
     };

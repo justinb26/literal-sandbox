@@ -20,25 +20,23 @@ impl Cell {
         }
 
         let down_neighbor = api.get_rel(0, 1);
-        let dl_neighbor = api.get_rel(-1, 1);
-        let dr_neighbor = api.get_rel(1, 1);
-       
-       
         if down_neighbor.cell_type == CellType::Void {
             api.set_rel(0,0,BLANK_CELL);
             api.set_rel(0,1,cell); 
-        } else
-
-
-       // if rand::random() {
+        } else {
+            let dl_neighbor = api.get_rel(-1, 1);
             // Down left first
             if dl_neighbor.cell_type == CellType::Void {
                 api.set_rel(0,0,BLANK_CELL);
                 api.set_rel(-1,1,cell); 
-            } else if dr_neighbor.cell_type == CellType::Void {
-                api.set_rel(0,0,BLANK_CELL);
-                api.set_rel(1,1,cell); 
+            } else  {
+                let dr_neighbor = api.get_rel(1, 1);
+                if dr_neighbor.cell_type == CellType::Void {
+                    api.set_rel(0,0,BLANK_CELL);
+                    api.set_rel(1,1,cell); 
+                }
             }
+        }
        //  } //else {
         //         // Down right first
         //         if dr_neighbor.cell_type == CellType::Void {
@@ -147,11 +145,12 @@ impl World {
         for i in 0..self.cells.len() {
             self.cells[i].data3 = 0;
         }
+
         for x in 0..self.width {
             for y in 0..self.height {
                 let cell = self.get_cell(x,y);
                 if cell.data3 == 0 { // Not yet updated
-                    World::update_cell(cell, Api { world: self, x: x, y: y})
+                    World::update_cell(cell, Api { world: self, x, y})
                 }
             }
         }            
