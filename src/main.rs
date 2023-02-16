@@ -1,7 +1,7 @@
 use nannou::prelude::*;
 mod cell_lib;
 use cell_lib::{CellType,World};
-use cell_lib::{SAND_CELL, BLANK_CELL, STONE_CELL};
+use cell_lib::{SAND_CELL, BLANK_CELL, STONE_CELL, MITE_CELL};
 
 static WIDTH_IN_CELLS: i32 = 80;
 static HEIGHT_IN_CELLS: i32 = 80;
@@ -78,14 +78,14 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
 
                 // Get equivalent  X/Y cell position
                 let (xxx, yyy) = cell_for_coords(_model, xx, yy);
-                // println!("{} {}", xxx, yyy);
+                println!("{} {}", xxx, yyy);
                 
                 let world_idx: usize = _model.world.get_index(xxx,yyy);
                 _model.world.cells[world_idx] = match _model.tool {
                     CellType::Sand => SAND_CELL,
                     CellType::Void => BLANK_CELL,
                     CellType::Stone => STONE_CELL,
-                    _ => BLANK_CELL,
+                    CellType::Mite => MITE_CELL,
                 };
             }
             
@@ -108,7 +108,7 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
                 CellType::Sand => SAND_CELL,
                 CellType::Void => BLANK_CELL,
                 CellType::Stone => STONE_CELL,
-                _ => BLANK_CELL,
+                CellType::Mite => MITE_CELL,
             };
             _model.mouse_down = 1 as i32;
         }
@@ -178,12 +178,20 @@ fn view(app: &App, _model: &Model, frame: Frame) {
                             win.top() - yy
                         )
                         .w_h(_model.cell_width, _model.cell_height)
-                        .color(DARKGRAY);                    
+                        .color(LIGHTGRAY);                    
+                },
+                CellType::Mite => {
+                    draw.rect()
+                    .x_y(win.left() + xx + _model.cell_width, 
+                        win.top() - yy
+                    )
+                    .w_h(_model.cell_width, _model.cell_height)
+                    .color(ORANGERED);
                 },
                 _ => { 
                     // draw.rect().x_y(xx-win.w()/2.0,HEIGHT_IN_CELLS as f32 - yy ).w_h(CELLS_SIZE, CELLS_SIZE).color(BLUE); 
                 },
-            }
+            };
         }
     }
     
@@ -192,8 +200,8 @@ fn view(app: &App, _model: &Model, frame: Frame) {
         CellType::Sand => "Sand",
         CellType::Stone => "Stone",
         CellType::Void => "Void",
-        _ => "Sand",
-       
+        CellType::Mite => "Mite",
+        // _ => "Sand",
     };
     
     draw.text(tool_string).x_y(r.left()+20.0, r.top()-20.0);

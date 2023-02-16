@@ -1,4 +1,5 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(C)]
 pub enum CellType {
     Void,
     Sand,
@@ -26,6 +27,7 @@ impl CellType {
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(C)]
 pub struct Cell {
     pub cell_type: CellType,
     data1: u8,
@@ -70,10 +72,34 @@ impl Cell {
                 // }
             },
             CellType::Mite => {
+                let down_neighbor = api.get_rel(0, 1);
+
+                // Fall
+                if down_neighbor.cell_type == CellType::Void {
+                    api.set_rel(0,0,BLANK_CELL);
+                    api.set_rel(0,1,self); 
+                } else {
+                    let dl_neighbor = api.get_rel(-1, 1);
+                    // Down left first
+                    if dl_neighbor.cell_type == CellType::Void && 
+                        down_neighbor.cell_type == CellType::Sand {
+                        api.set_rel(0,0,BLANK_CELL);
+                        api.set_rel(-1,1,self); 
+                    } else  {
+                        let dr_neighbor = api.get_rel(1, 1);
+                        if dr_neighbor.cell_type == CellType::Void &&
+                        down_neighbor.cell_type == CellType::Sand {
+                            api.set_rel(0,0,BLANK_CELL);
+                            api.set_rel(1,1,self); 
+                        }
+                    }
+                }
+
+                // Eat
 
             },
             CellType::Stone => {
-
+                // GNDN
             },
             _ => { return; },
         }
@@ -101,13 +127,23 @@ pub static STONE_CELL: Cell = Cell {
     data2: 0,
     data3: 0,
 };
+
+pub static MITE_CELL: Cell = Cell {
+    cell_type: CellType::Mite,
+    data1: 0,
+    data2: 0,
+    data3: 0,
+};
+
 // =====================================================
+#[repr(C)]
 pub struct World {
     pub width: i32,
     pub height: i32,
     pub cells: Vec<Cell>,
 }
 
+#[repr(C)]
 pub struct Api<'a> {
     pub x: i32,
     pub y: i32,
