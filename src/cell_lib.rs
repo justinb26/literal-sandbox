@@ -5,6 +5,23 @@ pub enum CellType {
     Stone,
 }
 
+impl CellType {
+    pub fn next(&self) -> CellType {
+        match self {
+            CellType::Void => CellType::Sand,
+            CellType::Sand => CellType::Stone,
+            CellType::Stone => CellType:: Void,
+        }
+    }
+    
+    pub fn prev(&self) -> CellType {
+        match self {
+            CellType::Void => CellType::Stone,
+            CellType::Sand => CellType::Void,
+            CellType::Stone => CellType::Sand,
+        }
+    }
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Cell {
     pub cell_type: CellType,
@@ -14,26 +31,26 @@ pub struct Cell {
 }
 
 impl Cell {
-    pub fn update(self, cell: Cell, mut api: Api) {
-        if cell.cell_type == CellType::Void {
+    pub fn update(self, mut api: Api) {
+        if self.cell_type == CellType::Void {
             return;
         }
 
         let down_neighbor = api.get_rel(0, 1);
         if down_neighbor.cell_type == CellType::Void {
             api.set_rel(0,0,BLANK_CELL);
-            api.set_rel(0,1,cell); 
+            api.set_rel(0,1,self); 
         } else {
             let dl_neighbor = api.get_rel(-1, 1);
             // Down left first
             if dl_neighbor.cell_type == CellType::Void {
                 api.set_rel(0,0,BLANK_CELL);
-                api.set_rel(-1,1,cell); 
+                api.set_rel(-1,1,self); 
             } else  {
                 let dr_neighbor = api.get_rel(1, 1);
                 if dr_neighbor.cell_type == CellType::Void {
                     api.set_rel(0,0,BLANK_CELL);
-                    api.set_rel(1,1,cell); 
+                    api.set_rel(1,1,self); 
                 }
             }
         }
@@ -121,15 +138,6 @@ impl World {
         }
     }
 
-    // pub fn reset(&mut self) {
-    //     for x in 0..self.width {
-    //         for y in 0..self.height {
-    //             let idx = self.get_index(x, y);
-    //             self.cells[idx] = BLANK_CELL;
-    //         }
-    //     }
-    // }
-
     pub fn get_index(&self, x: i32,y: i32) -> usize {
         // inverted?
         (y * self.width + x) as usize
@@ -141,7 +149,6 @@ impl World {
     }
 
     pub fn update(&mut self) {
-        // loop through all cells
         for i in 0..self.cells.len() {
             self.cells[i].data3 = 0;
         }
@@ -149,15 +156,18 @@ impl World {
         for x in 0..self.width {
             for y in 0..self.height {
                 let cell = self.get_cell(x,y);
+
                 if cell.data3 == 0 { // Not yet updated
                     World::update_cell(cell, Api { world: self, x, y})
                 }
             }
         }            
-        // update cell by trying to move down or diagonally down
     }
 
     fn update_cell(cell: Cell, mut api: Api) {
-        cell.update(cell, api);
+        if cell.data3 == 1 {
+            return;
+        }
+        cell.update(api);
     }
 }

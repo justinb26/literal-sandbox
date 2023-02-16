@@ -1,9 +1,12 @@
 use nannou::prelude::*;
+use nannou::event::*;
 mod cell_lib;
 use cell_lib::{Cell,CellType,World};
 use cell_lib::{SAND_CELL};
 use std::any::type_name;
 use std::cell;
+
+use crate::cell_lib::BLANK_CELL;
 
 static WIDTH_IN_CELLS: i32 = 80;
 static HEIGHT_IN_CELLS: i32 = 80;
@@ -34,6 +37,7 @@ struct Model {
     pos_x: f32,
     pos_y: f32,
     mouse_down: i32,
+    tool: CellType,
 }
 
 fn model(app: &App) -> Model {
@@ -53,6 +57,7 @@ fn model(app: &App) -> Model {
         pos_x: 0.0,
         pos_y: 0.0,
         mouse_down: 0,
+        tool: CellType::Sand,
      }
 }
 
@@ -74,15 +79,18 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
                 
                 // Translate to Top-Left origin
                 let xx = _model.pos_x + (win.w() / 2.0);
-                let yy = clamp((win.h() / 2.0) - _model.pos_y, 0.0, win.h());
+                let yy = clamp((win.h() / 2.0) - _model.pos_y, 0.0, win.h()-1.0);
 
                 // Get equivalent  X/Y cell position
                 let (xxx, yyy) = cell_for_coords(_model, xx, yy);
                 println!("{} {}", xxx, yyy);
                 
                 let world_idx: usize = _model.world.get_index(xxx,yyy);
-                _model.world.cells[world_idx] = SAND_CELL;
-
+                _model.world.cells[world_idx] = match _model.tool {
+                    CellType::Sand => SAND_CELL,
+                    CellType::Void => BLANK_CELL,
+                    _ => BLANK_CELL,
+                };
             }
             
              _model.pos_x = _pos.x;
@@ -99,12 +107,27 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
             let (xxx, yyy) = cell_for_coords(_model, xx, yy);
 
             let world_idx: usize = _model.world.get_index(xxx,yyy);
-            _model.world.cells[world_idx] = SAND_CELL;
-
-            _model.mouse_down = _button as i32;
+            _model.world.cells[world_idx] = match _model.tool {
+                CellType::Sand => SAND_CELL,
+                CellType::Void => BLANK_CELL,
+                _ => BLANK_CELL,
+            };
+            _model.mouse_down = 1 as i32;
         }
         MouseReleased(_button) => {
             _model.mouse_down = 0;
+        },
+        MouseWheel(_scrollDelta, _touchPhase) => {
+            let scroll = match _scrollDelta {
+                MouseScrollDelta::LineDelta(x,y) => { y },
+                _ => { 0.0 },
+            };
+            if scroll > 0.0 {
+                _model.tool = _model.tool.next();
+            }  else if scroll < 0.0 {
+                _model.tool = _model.tool.prev();
+            }
+
         }
         _ => {}
     };
@@ -157,6 +180,17 @@ fn view(app: &App, _model: &Model, frame: Frame) {
         }
     }
     
+    // Draw text
+    let toolString = match _model.tool {
+        CellType::Sand => "Sand",
+        CellType::Stone => "Stone",
+        CellType::Void => "Void",
+        _ => "Sand",
+       
+    };
+    
+    draw.text(toolString).x_y(r.left()+20.0, r.top()-20.0);
+
     // Write the result of our drawing to the window's frame.
     draw.to_frame(app, &frame).unwrap();
 }
