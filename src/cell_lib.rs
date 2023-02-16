@@ -32,38 +32,45 @@ pub struct Cell {
 
 impl Cell {
     pub fn update(self, mut api: Api) {
-        if self.cell_type == CellType::Void {
-            return;
-        }
 
-        let down_neighbor = api.get_rel(0, 1);
-        if down_neighbor.cell_type == CellType::Void {
-            api.set_rel(0,0,BLANK_CELL);
-            api.set_rel(0,1,self); 
-        } else {
-            let dl_neighbor = api.get_rel(-1, 1);
-            // Down left first
-            if dl_neighbor.cell_type == CellType::Void {
-                api.set_rel(0,0,BLANK_CELL);
-                api.set_rel(-1,1,self); 
-            } else  {
-                let dr_neighbor = api.get_rel(1, 1);
-                if dr_neighbor.cell_type == CellType::Void {
+        match self.cell_type {
+            CellType::Sand => {
+                let down_neighbor = api.get_rel(0, 1);
+                if down_neighbor.cell_type == CellType::Void {
                     api.set_rel(0,0,BLANK_CELL);
-                    api.set_rel(1,1,self); 
+                    api.set_rel(0,1,self); 
+                } else {
+                    let dl_neighbor = api.get_rel(-1, 1);
+                    // Down left first
+                    if dl_neighbor.cell_type == CellType::Void && 
+                        down_neighbor.cell_type == CellType::Sand {
+                        api.set_rel(0,0,BLANK_CELL);
+                        api.set_rel(-1,1,self); 
+                    } else  {
+                        let dr_neighbor = api.get_rel(1, 1);
+                        if dr_neighbor.cell_type == CellType::Void &&
+                        down_neighbor.cell_type == CellType::Sand {
+                            api.set_rel(0,0,BLANK_CELL);
+                            api.set_rel(1,1,self); 
+                        }
+                    }
                 }
-            }
+               //  } //else {
+                //         // Down right first
+                //         if dr_neighbor.cell_type == CellType::Void {
+                //             api.set_rel(0,0,BLANK_CELL);
+                //             api.set_rel(-1,1,cell); 
+                //         } else if dl_neighbor.cell_type == CellType::Void {
+                //             api.set_rel(0,0,BLANK_CELL);
+                //             api.set_rel(1,1,cell); 
+                //         }
+                // }
+            },
+            CellType::Stone => {
+
+            },
+            _ => { return; },
         }
-       //  } //else {
-        //         // Down right first
-        //         if dr_neighbor.cell_type == CellType::Void {
-        //             api.set_rel(0,0,BLANK_CELL);
-        //             api.set_rel(-1,1,cell); 
-        //         } else if dl_neighbor.cell_type == CellType::Void {
-        //             api.set_rel(0,0,BLANK_CELL);
-        //             api.set_rel(1,1,cell); 
-        //         }
-        // }
 
     }
 }
