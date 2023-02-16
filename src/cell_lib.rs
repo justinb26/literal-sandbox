@@ -3,14 +3,16 @@ pub enum CellType {
     Void,
     Sand,
     Stone,
+    Mite
 }
 
 impl CellType {
     pub fn next(&self) -> CellType {
         match self {
             CellType::Void => CellType::Sand,
-            CellType::Sand => CellType::Stone,
-            CellType::Stone => CellType:: Void,
+            CellType::Sand => CellType::Mite,
+            CellType::Mite => CellType::Stone,
+            CellType::Stone => CellType::Void,
         }
     }
     
@@ -18,7 +20,8 @@ impl CellType {
         match self {
             CellType::Void => CellType::Stone,
             CellType::Sand => CellType::Void,
-            CellType::Stone => CellType::Sand,
+            CellType::Mite => CellType::Sand,
+            CellType::Stone => CellType::Mite,
         }
     }
 }
@@ -65,6 +68,9 @@ impl Cell {
                 //             api.set_rel(1,1,cell); 
                 //         }
                 // }
+            },
+            CellType::Mite => {
+
             },
             CellType::Stone => {
 
@@ -171,7 +177,7 @@ impl World {
         }            
     }
 
-    fn update_cell(cell: Cell, mut api: Api) {
+    fn update_cell(cell: Cell, api: Api) {
         if cell.data3 == 1 {
             return;
         }
