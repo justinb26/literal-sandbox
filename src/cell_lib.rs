@@ -74,28 +74,27 @@ impl Cell {
             CellType::Mite => {
                 let down_neighbor = api.get_rel(0, 1);
 
-                // Fall
-                if down_neighbor.cell_type == CellType::Void {
+                // Eat
+                if down_neighbor.cell_type == CellType::Sand {
                     api.set_rel(0,0,BLANK_CELL);
                     api.set_rel(0,1,self); 
                 } else {
                     let dl_neighbor = api.get_rel(-1, 1);
                     // Down left first
-                    if dl_neighbor.cell_type == CellType::Void && 
-                        down_neighbor.cell_type == CellType::Sand {
-                        api.set_rel(0,0,BLANK_CELL);
+                    if dl_neighbor.cell_type == CellType::Sand {
+                        // api.set_rel(0,0,BLANK_CELL);
                         api.set_rel(-1,1,self); 
                     } else  {
                         let dr_neighbor = api.get_rel(1, 1);
-                        if dr_neighbor.cell_type == CellType::Void &&
-                        down_neighbor.cell_type == CellType::Sand {
-                            api.set_rel(0,0,BLANK_CELL);
+                        if dr_neighbor.cell_type == CellType::Sand {
+                            // api.set_rel(0,0,BLANK_CELL);
                             api.set_rel(1,1,self); 
                         }
                     }
                 }
 
                 // Eat
+                
 
             },
             CellType::Stone => {
