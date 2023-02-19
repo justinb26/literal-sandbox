@@ -1,29 +1,13 @@
-use nannou::prelude::*;
 mod cell_lib;
-use cell_lib::{CellType,World};
-use cell_lib::{SAND_CELL, BLANK_CELL, STONE_CELL, MITE_CELL};
+mod world_lib;
+mod api_lib;
 
-static WIDTH_IN_CELLS: i32 = 80;
-static HEIGHT_IN_CELLS: i32 = 80;
+use nannou::prelude::*;
+use cell_lib::*;
+use world_lib::*;
 
-//static CELLS_SIZE: f32 = 4.0;
-
-// GOAL: Falling sand with static solids
-// Next goal: Water, Quicksand?
-// Notable checkpoints:
-// Grid system
-// Falling particle
-// Stacks of sand
-// Solid barrier
-// Mouse input
-// Multiple particle types
-// Interacting particles
-///////////////////////
-// Pause simulation
-// GUI
-// Resizing
-// WASM
-// Perf optimization
+static WIDTH_IN_CELLS: i32 = 200;
+static HEIGHT_IN_CELLS: i32 = 200;
 
 struct Model {
     world: World,
@@ -33,18 +17,19 @@ struct Model {
     pos_y: f32,
     mouse_down: i32,
     tool: CellType,
+    resize: bool,
+}
+
+fn main() {
+    nannou::app(model).update(update_model).run()
 }
 
 fn model(app: &App) -> Model {
     let world: World = World::new(WIDTH_IN_CELLS, HEIGHT_IN_CELLS);
-    app.set_loop_mode(LoopMode::rate_fps(2.0));
     app.new_window().event(event).view(view).build().unwrap();
     
-    // calculate width and height in cells
-    let win: Rect = app.window_rect();
-    let cell_width: f32 = win.w() / WIDTH_IN_CELLS as f32;
-    let cell_height: f32 = win.h() / HEIGHT_IN_CELLS as f32;
-    
+    let (cell_width, cell_height) = get_cell_dimensions(app.window_rect());
+
      Model { 
         world,
         cell_width,
@@ -53,63 +38,50 @@ fn model(app: &App) -> Model {
         pos_y: 0.0,
         mouse_down: 0,
         tool: CellType::Sand,
+        resize: false,
      }
 }
 
-fn cell_for_coords(_model: &mut Model, x: f32, y: f32) -> (i32, i32) {
+fn update_model(_app: &App, _model: &mut Model, _update: nannou::event::Update){
+    if _model.resize {
+        (_model.cell_width, _model.cell_height) = get_cell_dimensions(_app.window_rect());
+        _model.resize = false;
+    }
 
-    let new_x = (x / _model.cell_width) as i32;
-    let new_y = (y / _model.cell_height) as i32;
+    if _model.mouse_down == 1 {
+        let win = _app.window_rect();
+        
+        // Translate to Top-Left origin
+        let xx = _model.pos_x + (win.w() / 2.0);
+        let yy = (win.h() / 2.0) - _model.pos_y;
 
-    (new_x, new_y)
+        // Get equivalent  X/Y cell position
+        let (xxx, yyy) = get_cell_for_coords(_model, xx, yy);
+
+        // Actually insert cells, we should do this in 
+        let world_idx: usize = _model.world.get_index(
+            clamp(xxx,0,WIDTH_IN_CELLS-1),
+            clamp(yyy,0,HEIGHT_IN_CELLS-1)
+        );
+        
+        _model.world.cells[world_idx] = match _model.tool {
+            CellType::Sand => SAND_CELL,
+            CellType::Void => BLANK_CELL,
+            CellType::Stone => STONE_CELL,
+            CellType::Mite => MITE_CELL,
+        };
+    }
+
+    _model.world.update();
 }
 
 fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
-    
     match _event {
         MouseMoved(_pos) => {
-            if _model.mouse_down == 1 {
-    
-                let win = _app.window_rect();
-                
-                // Translate to Top-Left origin
-                let xx = clamp(_model.pos_x + (win.w() / 2.0), 0.0, win.w()-1.0);
-                let yy = clamp((win.h() / 2.0) - _model.pos_y, 0.0, win.h()-1.0);
-
-                // Get equivalent  X/Y cell position
-                let (xxx, yyy) = cell_for_coords(_model, xx, yy);
-                println!("{} {}", xxx, yyy);
-                
-                let world_idx: usize = _model.world.get_index(xxx,yyy);
-                _model.world.cells[world_idx] = match _model.tool {
-                    CellType::Sand => SAND_CELL,
-                    CellType::Void => BLANK_CELL,
-                    CellType::Stone => STONE_CELL,
-                    CellType::Mite => MITE_CELL,
-                };
-            }
-            
              _model.pos_x = _pos.x;
              _model.pos_y = _pos.y;
         }
         MousePressed(_button) => { 
-            
-            let win = _app.window_rect();
-            
-            // Translate to Top-Left origin
-            let xx = _model.pos_x + (win.w() / 2.0);
-            let yy = (win.h() / 2.0) - _model.pos_y;
-            
-            let (xxx, yyy) = cell_for_coords(_model, xx, yy);
-
-            // TODO: Ewww, repetition
-            let world_idx: usize = _model.world.get_index(xxx,yyy);
-            _model.world.cells[world_idx] = match _model.tool {
-                CellType::Sand => SAND_CELL,
-                CellType::Void => BLANK_CELL,
-                CellType::Stone => STONE_CELL,
-                CellType::Mite => MITE_CELL,
-            };
             _model.mouse_down = 1 as i32;
         }
         MouseReleased(_button) => {
@@ -121,27 +93,17 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
                 _ => { 0.0 },
             };
 
-            if scroll > 0.0 {
-                _model.tool = _model.tool.next();
-            }  else if scroll < 0.0 {
-                _model.tool = _model.tool.prev();
+            match scroll {
+                s if s > 0.0 => { _model.tool = _model.tool.next(); },
+                s if s < 0.0 => { _model.tool = _model.tool.prev(); },
+                _ => {},
             }
-
         }
+        Resized(_new_xy) => { 
+            _model.resize = true;
+        },
         _ => {}
     };
-
-    
-}
-
-
-fn main() {
-    nannou::app(model).update(update_model).run()
-}
-
-fn update_model(_app: &App, _model: &mut Model, _update: nannou::event::Update){
-    //println!("UPDATING MODEL");
-    _model.world.update();
 }
 
 fn view(app: &App, _model: &Model, frame: Frame) {
@@ -194,18 +156,28 @@ fn view(app: &App, _model: &Model, frame: Frame) {
             };
         }
     }
-    
-    // Draw text
-    let tool_string = match _model.tool {
-        CellType::Sand => "Sand",
-        CellType::Stone => "Stone",
-        CellType::Void => "Void",
-        CellType::Mite => "Mite",
-        // _ => "Sand",
-    };
-    
+
+    // Draw tool label
+    let tool_string: &'static str = _model.tool.into();
     draw.text(tool_string).x_y(r.left()+20.0, r.top()-20.0);
 
     // Write the result of our drawing to the window's frame.
     draw.to_frame(app, &frame).unwrap();
+}
+
+// ================================================================================
+
+fn get_cell_for_coords(_model: &mut Model, x: f32, y: f32) -> (i32, i32) {
+    let new_x = (x / _model.cell_width) as i32;
+    let new_y = (y / _model.cell_height) as i32;
+
+    (new_x, new_y)
+}
+
+fn get_cell_dimensions(win_rect: Rect) -> (f32, f32) {
+    // calculate width and height in cells
+    let cell_width: f32 = win_rect.w() / WIDTH_IN_CELLS as f32;
+    let cell_height: f32 = win_rect.h() / HEIGHT_IN_CELLS as f32;
+    
+    (cell_width, cell_height)
 }
