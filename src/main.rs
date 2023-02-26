@@ -6,8 +6,8 @@ use nannou::prelude::*;
 use cell_lib::*;
 use world_lib::*;
 
-static WIDTH_IN_CELLS: i32 = 200;
-static HEIGHT_IN_CELLS: i32 = 200;
+static WIDTH_IN_CELLS: i32 = 100;
+static HEIGHT_IN_CELLS: i32 = 100;
 
 struct Model {
     world: World,
