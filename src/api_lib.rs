@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use crate::world_lib::*;
 use crate::cell_lib::*;
 
@@ -30,6 +32,33 @@ impl<'a> Api<'a> {
         self.world.cells[idx] = cell;
         self.world.cells[idx].updated = true;
     }
+
+    // This function gets a random neighbor cell, either to the bottom left or bottom right
+    pub fn get_random_down_neighbor(&self) -> Cell {
+        let mut rng = rand::thread_rng();
+        let mut dx = rng.gen_range(-1..1);
+        let mut dy = 1;
+
+        self.get_rel(dx, dy)
+    }
+
+    pub fn swap_cell(&mut self, cell: Cell, x: i32, y: i32) {
+        // Get the cell at the given x and y
+        let swap_idx = self.world.get_index(self.x+x, self.y+y);
+        let swap_cell = self.world.cells[swap_idx];
+
+        let cell_idx = self.world.get_index(self.x, self.y);
+        
+        // Swap the cells
+        self.world.cells[swap_idx] = cell;
+        self.world.cells[cell_idx] = swap_cell;
+
+        self.world.cells[cell_idx].updated = true;
+        self.world.cells[swap_idx].updated = true;
+        
+    }
+     
+
 }
 
 // =====================================================

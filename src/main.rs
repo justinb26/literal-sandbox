@@ -1,6 +1,7 @@
 mod cell_lib;
 mod world_lib;
 mod api_lib;
+use rand::Rng;
 
 use nannou::prelude::*;
 use cell_lib::*;
@@ -92,10 +93,11 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
                 MouseScrollDelta::LineDelta(_x,y) => { y },
                 _ => { 0.0 },
             };
+            println!("wheel! {}", scroll);
 
             match scroll {
-                s if s > 0.0 => { _model.tool = _model.tool.next(); },
-                s if s < 0.0 => { _model.tool = _model.tool.prev(); },
+                s if s > 0.0 => { println!("up");_model.tool = _model.tool.next(); },
+                s if s < 0.0 => { println!("down");_model.tool = _model.tool.prev(); },
                 _ => {},
             }
         }
@@ -116,7 +118,8 @@ fn view(app: &App, _model: &Model, frame: Frame) {
     draw.background().color(BLACK);
 
     let r = Rect::from_w_h(win.w(),win.h()).top_left_of(win);
- 
+    let mut rng = rand::thread_rng();
+                    
     // Draw a pixel for every cell that is sand
     for x in 0..WIDTH_IN_CELLS {
         for y in 0..HEIGHT_IN_CELLS {
@@ -127,12 +130,21 @@ fn view(app: &App, _model: &Model, frame: Frame) {
 
             match cell_type {
                 CellType::Sand => { 
+                    
+                    let color = match rng.gen_range(0..3) {
+                        0 => YELLOW,
+                        1 => GOLD,
+                        2 => ORANGE,
+                        _ => YELLOW,
+                    };
+                    
                     draw.rect()
+                    
                         .x_y(win.left() + xx + _model.cell_width,
                             win.top() - yy
                         )
                         .w_h(_model.cell_width, _model.cell_height)
-                        .color(YELLOW);                    
+                        .color(color);                    
                 },
                 CellType::Stone => {
                     draw.rect()

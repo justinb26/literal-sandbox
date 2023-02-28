@@ -14,6 +14,7 @@ pub enum CellType {
 
 impl CellType {
     pub fn next(&self) -> CellType {
+        println!("NEXT!");
         match self {
             CellType::Void => CellType::Sand,
             CellType::Sand => CellType::Mite,
@@ -69,26 +70,28 @@ impl Cell {
                         // Try to move diagonally, starting with left
                         if dl_neighbor.cell_type == CellType::Void && 
                             down_neighbor.cell_type == CellType::Void {
-                            api.set_rel(0,0,BLANK_CELL);
-                            api.set_rel(LEFT, DOWN,self); 
+                            api.swap_cell(self, LEFT, DOWN);
                         } else  {
                             if dr_neighbor.cell_type == CellType::Void &&
                             down_neighbor.cell_type == CellType::Void {
-                                api.set_rel(0,0,BLANK_CELL);
-                                api.set_rel(RIGHT, DOWN,self); 
+                                api.swap_cell(self, RIGHT, DOWN);
+                                // api.set_rel(0,0,BLANK_CELL);
+                                // api.set_rel(RIGHT, DOWN,self); 
                             }
                         }
                     } else {
                         // Try to move diagonally, starting with right
                         if dr_neighbor.cell_type == CellType::Void &&
                             down_neighbor.cell_type == CellType::Void {
-                            api.set_rel(0,0,BLANK_CELL);
-                            api.set_rel(RIGHT, DOWN,self); 
+                            api.swap_cell(self, RIGHT, DOWN);
+                            // api.set_rel(0,0,BLANK_CELL);
+                            // api.set_rel(RIGHT, DOWN,self); 
                         } else  {
                             if dl_neighbor.cell_type == CellType::Void && 
                             down_neighbor.cell_type == CellType::Void {
-                                api.set_rel(0,0,BLANK_CELL);
-                                api.set_rel(LEFT, DOWN,self); 
+                                api.swap_cell(self, LEFT, DOWN);
+                                // api.set_rel(0,0,BLANK_CELL);
+                                // api.set_rel(LEFT, DOWN,self); 
                             }
                         }
                     }
@@ -96,8 +99,9 @@ impl Cell {
 
                     
                     if down_neighbor.cell_type == CellType::Void {
-                        api.set_rel(0,0,BLANK_CELL);
-                        api.set_rel(0,DOWN,self); 
+                        api.swap_cell(self, 0, DOWN);
+                        // api.set_rel(0,0,BLANK_CELL);
+                        // api.set_rel(0,DOWN,self); 
                     } else {
                         let rand_bool = rng.gen_bool(0.5);
 
@@ -105,26 +109,30 @@ impl Cell {
                             // Down left first
                             if dl_neighbor.cell_type == CellType::Void && 
                                 down_neighbor.cell_type == CellType::Sand {
-                                api.set_rel(0,0,BLANK_CELL);
-                                api.set_rel(LEFT, DOWN,self); 
+                                api.swap_cell(self, LEFT, DOWN);
+                                // api.set_rel(0,0,BLANK_CELL);
+                                // api.set_rel(LEFT, DOWN,self); 
                             } else  {
                                 if dr_neighbor.cell_type == CellType::Void &&
                                 down_neighbor.cell_type == CellType::Sand {
-                                    api.set_rel(0,0,BLANK_CELL);
-                                    api.set_rel(RIGHT, DOWN,self); 
+                                    api.swap_cell(self, RIGHT, DOWN);
+                                    // api.set_rel(0,0,BLANK_CELL);
+                                    // api.set_rel(RIGHT, DOWN,self); 
                                 }
                             }        
                         } else {
                             // Down right first
                             if dr_neighbor.cell_type == CellType::Void &&
                                 down_neighbor.cell_type == CellType::Sand {
-                                api.set_rel(0,0,BLANK_CELL);
-                                api.set_rel(RIGHT, DOWN,self); 
+                                api.swap_cell(self, RIGHT, DOWN);
+                                // api.set_rel(0,0,BLANK_CELL);
+                                // api.set_rel(RIGHT, DOWN,self); 
                             } else  {
                                 if dl_neighbor.cell_type == CellType::Void && 
                                 down_neighbor.cell_type == CellType::Sand {
-                                    api.set_rel(0,0,BLANK_CELL);
-                                    api.set_rel(LEFT, DOWN,self); 
+                                    api.swap_cell(self, LEFT, DOWN);
+                                    // api.set_rel(0,0,BLANK_CELL);
+                                    // api.set_rel(LEFT, DOWN,self); 
                                 }
                             }
                         }
