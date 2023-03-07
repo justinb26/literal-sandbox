@@ -66,7 +66,16 @@ fn update_model(_app: &App, _model: &mut Model, _update: nannou::event::Update){
         );
         
         _model.world.cells[world_idx] = match _model.tool {
-            CellType::Sand => SAND_CELL,
+            CellType::Sand => { 
+                let mut rng = rand::thread_rng();
+
+                Cell {
+                    cell_type: CellType::Sand,
+                    updated: false,
+                    data1: rng.gen_range(0..3),
+                    data2: 0
+                }
+            }
             CellType::Void => BLANK_CELL,
             CellType::Stone => STONE_CELL,
             CellType::Mite => MITE_CELL,
@@ -93,11 +102,10 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {
                 MouseScrollDelta::LineDelta(_x,y) => { y },
                 _ => { 0.0 },
             };
-            println!("wheel! {}", scroll);
-
+            
             match scroll {
-                s if s > 0.0 => { println!("up");_model.tool = _model.tool.next(); },
-                s if s < 0.0 => { println!("down");_model.tool = _model.tool.prev(); },
+                s if s > 0.0 => { _model.tool = _model.tool.next(); },
+                s if s < 0.0 => { _model.tool = _model.tool.prev(); },
                 _ => {},
             }
         }
@@ -123,7 +131,8 @@ fn view(app: &App, _model: &Model, frame: Frame) {
     // Draw a pixel for every cell that is sand
     for x in 0..WIDTH_IN_CELLS {
         for y in 0..HEIGHT_IN_CELLS {
-            let cell_type = _model.world.get_cell(x,y).cell_type;
+            let cell = _model.world.get_cell(x,y);
+            let cell_type = cell.cell_type;
             
             let xx: f32 = x as f32 * _model.cell_width;
             let yy: f32 = y as f32 * _model.cell_height;
@@ -131,7 +140,7 @@ fn view(app: &App, _model: &Model, frame: Frame) {
             match cell_type {
                 CellType::Sand => { 
                     
-                    let color = match rng.gen_range(0..3) {
+                    let color = match cell.data1 {
                         0 => YELLOW,
                         1 => GOLD,
                         2 => ORANGE,

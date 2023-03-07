@@ -6,7 +6,6 @@ use crate::api_lib::Api;
 #[repr(C)]
 pub enum CellType {
     Void,
-    #[strum(serialize="Sandy")]
     Sand,
     Stone,
     Mite
@@ -22,7 +21,6 @@ impl CellType {
             CellType::Stone => CellType::Void,
         }
     }
-    
     pub fn prev(&self) -> CellType {
         match self {
             CellType::Void => CellType::Stone,
@@ -37,8 +35,8 @@ impl CellType {
 #[repr(C)]
 pub struct Cell {
     pub cell_type: CellType,
-    data1: u8,
-    data2: u8,
+    pub data1: u8,
+    pub data2: u8,
     pub updated: bool
 }
 
@@ -50,134 +48,102 @@ static DOWN: i32 = 1;
 
 impl Cell {
     pub fn update(self, mut api: Api) {
+        match self.cell_type {
+            CellType::Sand => self.update_sand(api),
+            CellType::Mite => self.update_mite(api),
+            CellType::Stone => { },
+            _ => { return; },
+        }
+    }
+
+    fn update_sand(self, mut api: Api) {
         let down_neighbor = api.get_rel(0, DOWN);
         let dl_neighbor = api.get_rel(LEFT, DOWN);
         let dr_neighbor = api.get_rel(RIGHT, DOWN);
 
+        let neighbors_to_check = [0, LEFT, RIGHT];
+
+        // Get random neighbor
+        // Check condition for that neighbor
+        // If condition is met, swap with that neighbor
+        // If condition is not met, check next neighbor
+        // If no conditions are met, do nothing
+
         let mut rng = rand::thread_rng();
-        match self.cell_type {
-            CellType::Sand => {
 
-                // 1 in 3 chance that the cell will try to move diagonally
-                
-                let rand_num = rng.gen_range(0..3);
-
-                if rand_num == 0 {
-                    let rand_bool = rng.gen_bool(0.5);
-
-                    if rand_bool {
-                            
-                        // Try to move diagonally, starting with left
-                        if dl_neighbor.cell_type == CellType::Void && 
-                            down_neighbor.cell_type == CellType::Void {
-                            api.swap_cell(self, LEFT, DOWN);
-                        } else  {
-                            if dr_neighbor.cell_type == CellType::Void &&
-                            down_neighbor.cell_type == CellType::Void {
-                                api.swap_cell(self, RIGHT, DOWN);
-                                // api.set_rel(0,0,BLANK_CELL);
-                                // api.set_rel(RIGHT, DOWN,self); 
-                            }
-                        }
-                    } else {
-                        // Try to move diagonally, starting with right
-                        if dr_neighbor.cell_type == CellType::Void &&
-                            down_neighbor.cell_type == CellType::Void {
-                            api.swap_cell(self, RIGHT, DOWN);
-                            // api.set_rel(0,0,BLANK_CELL);
-                            // api.set_rel(RIGHT, DOWN,self); 
-                        } else  {
-                            if dl_neighbor.cell_type == CellType::Void && 
-                            down_neighbor.cell_type == CellType::Void {
-                                api.swap_cell(self, LEFT, DOWN);
-                                // api.set_rel(0,0,BLANK_CELL);
-                                // api.set_rel(LEFT, DOWN,self); 
-                            }
-                        }
+        // 1 in 3 chance that the cell will try to move diagonally
+        let rand_num = rng.gen_range(0..3);
+        if rand_num == 0 {
+            let rand_bool = rng.gen_bool(0.5);
+            if rand_bool {
+                // Try to move diagonally, starting with left
+                if dl_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Void {
+                    api.swap_cell(self, LEFT, DOWN);
+                } else  {
+                    if dr_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Void {
+                        api.swap_cell(self, RIGHT, DOWN);
                     }
-                } else {
-
-                    
-                    if down_neighbor.cell_type == CellType::Void {
-                        api.swap_cell(self, 0, DOWN);
-                        // api.set_rel(0,0,BLANK_CELL);
-                        // api.set_rel(0,DOWN,self); 
-                    } else {
-                        let rand_bool = rng.gen_bool(0.5);
-
-                        if rand_bool {
-                            // Down left first
-                            if dl_neighbor.cell_type == CellType::Void && 
-                                down_neighbor.cell_type == CellType::Sand {
-                                api.swap_cell(self, LEFT, DOWN);
-                                // api.set_rel(0,0,BLANK_CELL);
-                                // api.set_rel(LEFT, DOWN,self); 
-                            } else  {
-                                if dr_neighbor.cell_type == CellType::Void &&
-                                down_neighbor.cell_type == CellType::Sand {
-                                    api.swap_cell(self, RIGHT, DOWN);
-                                    // api.set_rel(0,0,BLANK_CELL);
-                                    // api.set_rel(RIGHT, DOWN,self); 
-                                }
-                            }        
-                        } else {
-                            // Down right first
-                            if dr_neighbor.cell_type == CellType::Void &&
-                                down_neighbor.cell_type == CellType::Sand {
-                                api.swap_cell(self, RIGHT, DOWN);
-                                // api.set_rel(0,0,BLANK_CELL);
-                                // api.set_rel(RIGHT, DOWN,self); 
-                            } else  {
-                                if dl_neighbor.cell_type == CellType::Void && 
-                                down_neighbor.cell_type == CellType::Sand {
-                                    api.swap_cell(self, LEFT, DOWN);
-                                    // api.set_rel(0,0,BLANK_CELL);
-                                    // api.set_rel(LEFT, DOWN,self); 
-                                }
-                            }
-                        }
-
-                    }
-                
                 }
+            } else {
+                // Try to move diagonally, starting with right
+                if dr_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Void {
+                    api.swap_cell(self, RIGHT, DOWN);
+                } else  {
+                    if dl_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Void {
+                        api.swap_cell(self, LEFT, DOWN);
+                    }
+                }
+            }
+        } else {           
+            if down_neighbor.cell_type == CellType::Void {
+                api.swap_cell(self, 0, DOWN);
+            } else {
+                let rand_bool = rng.gen_bool(0.5);
 
-                
-            },
-
-
-            CellType::Mite => {
-                let down_neighbor = api.get_rel(0, 1);
-
-                // Eat
-                if down_neighbor.cell_type == CellType::Sand {
-                    api.set_rel(0,0,BLANK_CELL);
-                    api.set_rel(0,1,self); 
-                } else {
-                    let dl_neighbor = api.get_rel(-1, 1);
+                if rand_bool {
                     // Down left first
-                    if dl_neighbor.cell_type == CellType::Sand {
-                        // api.set_rel(0,0,BLANK_CELL);
-                        api.set_rel(-1,1,self); 
+                    if dl_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Sand {
+                        api.swap_cell(self, LEFT, DOWN);
                     } else  {
-                        let dr_neighbor = api.get_rel(1, 1);
-                        if dr_neighbor.cell_type == CellType::Sand {
-                            // api.set_rel(0,0,BLANK_CELL);
-                            api.set_rel(1,1,self); 
+                        if dr_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Sand {
+                            api.swap_cell(self, RIGHT, DOWN);
+                        }
+                    }        
+                } else {
+                    // Down right first
+                    if dr_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Sand {
+                        api.swap_cell(self, RIGHT, DOWN);
+                    } else  {
+                        if dl_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Sand {
+                            api.swap_cell(self, LEFT, DOWN);
                         }
                     }
                 }
-            },
+            }
+        }
+    }
 
+    fn update_mite(self, mut api: Api) {
+        let down_neighbor = api.get_rel(0, 1);
+        let dr_neighbor = api.get_rel(1, 1);
 
-            CellType::Stone => { },
-            
-            _ => { return; },
-
-
+        if down_neighbor.cell_type == CellType::Sand {
+            api.swap_cell(self, RIGHT, DOWN);
+        } else {
+            let dl_neighbor = api.get_rel(-1, 1);
+            if dl_neighbor.cell_type == CellType::Sand {
+                api.set_rel(-1,1,self); 
+            } else  {
+                if dr_neighbor.cell_type == CellType::Sand {
+                    api.set_rel(1,1,self); 
+                }
+            }
         }
     }
 
 }
+
+//=======================================================================================
 
 // Definition of CellBehavior<T> superclass, does not need to contain next or prev
 trait CellBehavior<T> {
@@ -190,14 +156,19 @@ impl CellBehavior<Cell> for CellType {
 }
 
 trait Falls<T> : CellBehavior<T>{
-    fn update(&mut self, _api: Api);
+    fn update(self, _api: Api);
+    fn fall(self, _api: Api);
 }
 
 impl<T> Falls<T> for CellType
 where T:CellBehavior<T>, CellType:CellBehavior<T>
  {
-    fn update(&mut self, _api: Api) {
-        println!("Falls!");
+    fn update(self, _api: Api) {
+        self.fall(_api);
+    }
+
+    fn fall(self, _api: Api) {
+        println!("Falling!");
     }
 }
 
@@ -218,17 +189,12 @@ where T:
     }
 }
 
-// Static cell definitions
 
+//=======================================================================================
+
+// Static cell definitions
 pub static BLANK_CELL: Cell = Cell {
     cell_type: CellType::Void,
-    data1: 0,
-    data2: 0,
-    updated: false,
-};
-
-pub static SAND_CELL: Cell = Cell {
-    cell_type: CellType::Sand,
     data1: 0,
     data2: 0,
     updated: false,
