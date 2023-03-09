@@ -44,12 +44,27 @@ impl<'a> Api<'a> {
         self.world.cells[swap_idx] = cell;
         self.world.cells[cell_idx] = swap_cell;
 
-        self.world.cells[cell_idx].updated = true;
+        // self.world.cells[cell_idx].updated = true;
         self.world.cells[swap_idx].updated = true;
         
     }
      
-
+    pub fn get_random_neighbor_coords(&self) -> (i32, i32) {
+        let mut rng = rand::thread_rng();
+        let rnd = rng.gen_range(0..1000);
+        match rnd % 8 {
+            0 => (-1,-1),
+            1 => ( 0,-1),
+            2 => ( 1,-1),
+            3 => (-1, 0),
+            // We don't want the middle cell
+            4 => ( 1, 0),
+            5 => (-1, 1),
+            6 => ( 0, 1),
+            7 => ( 1, 1),
+            _ => ( 0, 0),
+        }
+    }
 }
 
 // =====================================================

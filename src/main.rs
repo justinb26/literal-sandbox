@@ -7,8 +7,8 @@ use nannou::prelude::*;
 use cell_lib::*;
 use world_lib::*;
 
-static WIDTH_IN_CELLS: i32 = 100;
-static HEIGHT_IN_CELLS: i32 = 100;
+static WIDTH_IN_CELLS: i32 = 150;
+static HEIGHT_IN_CELLS: i32 = 150;
 
 struct Model {
     world: World,
@@ -50,35 +50,67 @@ fn update_model(_app: &App, _model: &mut Model, _update: nannou::event::Update){
     }
 
     if _model.mouse_down == 1 {
+        let mut rng = rand::thread_rng();
         let win = _app.window_rect();
         
         // Translate to Top-Left origin
         let xx = _model.pos_x + (win.w() / 2.0);
         let yy = (win.h() / 2.0) - _model.pos_y;
 
-        // Get equivalent  X/Y cell position
+        // Get equivalent X/Y cell position
         let (xxx, yyy) = get_cell_for_coords(_model, xx, yy);
 
-        // Actually insert cells, we should do this in 
+        // Insert cells
         let world_idx: usize = _model.world.get_index(
             clamp(xxx,0,WIDTH_IN_CELLS-1),
             clamp(yyy,0,HEIGHT_IN_CELLS-1)
         );
         
-        _model.world.cells[world_idx] = match _model.tool {
+        
+        match _model.tool {
+            
             CellType::Sand => { 
-                let mut rng = rand::thread_rng();
-
-                Cell {
-                    cell_type: CellType::Sand,
-                    updated: false,
-                    data1: rng.gen_range(0..3),
-                    data2: 0
+                match _model.world.cells[world_idx].cell_type {
+                    CellType::Void => {
+                        _model.world.cells[world_idx] = Cell {
+                            cell_type: CellType::Sand,
+                            updated: false,
+                            data1: rng.gen_range(0..3),
+                            data2: 0
+                        }
+                    },
+                    _ => {}
+                }
+            },
+            
+            CellType::Stone => {
+                match _model.world.cells[world_idx].cell_type {
+                    CellType::Sand | CellType::Mite | CellType::Void => {
+                        _model.world.cells[world_idx] = Cell {
+                            cell_type: CellType::Stone,
+                            updated: false,
+                            data1: rng.gen_range(0..3),
+                            data2: 0
+                        }
+                    },
+                    _ => {}
+                }
+            },
+            
+            CellType::Mite => {
+                match _model.world.cells[world_idx].cell_type {
+                    CellType::Sand | CellType::Void => {
+                        _model.world.cells[world_idx] = Cell {
+                            cell_type: CellType::Mite,
+                            updated: false,
+                            data1: rng.gen_range(0..3),
+                            data2: 0
+                        }
+                    }
+                    _ => {}
                 }
             }
-            CellType::Void => BLANK_CELL,
-            CellType::Stone => STONE_CELL,
-            CellType::Mite => MITE_CELL,
+            CellType::Void => _model.world.cells[world_idx] = BLANK_CELL,
         };
     }
 
@@ -126,7 +158,7 @@ fn view(app: &App, _model: &Model, frame: Frame) {
     draw.background().color(BLACK);
 
     let r = Rect::from_w_h(win.w(),win.h()).top_left_of(win);
-    let mut rng = rand::thread_rng();
+    // let mut rng = rand::thread_rng();
                     
     // Draw a pixel for every cell that is sand
     for x in 0..WIDTH_IN_CELLS {
@@ -139,7 +171,6 @@ fn view(app: &App, _model: &Model, frame: Frame) {
 
             match cell_type {
                 CellType::Sand => { 
-                    
                     let color = match cell.data1 {
                         0 => YELLOW,
                         1 => GOLD,
@@ -148,7 +179,6 @@ fn view(app: &App, _model: &Model, frame: Frame) {
                     };
                     
                     draw.rect()
-                    
                         .x_y(win.left() + xx + _model.cell_width,
                             win.top() - yy
                         )
@@ -156,24 +186,36 @@ fn view(app: &App, _model: &Model, frame: Frame) {
                         .color(color);                    
                 },
                 CellType::Stone => {
+                    let color = match cell.data1 {
+                        0 => LIGHTGRAY,
+                        1 => DARKGRAY,
+                        2 => GRAY,
+                        _ => LIGHTGRAY,
+                    };
+
                     draw.rect()
                         .x_y(win.left() + xx + _model.cell_width, 
                             win.top() - yy
                         )
                         .w_h(_model.cell_width, _model.cell_height)
-                        .color(LIGHTGRAY);                    
+                        .color(color);                    
                 },
                 CellType::Mite => {
+                    let color = match cell.data1 {
+                        0 => ORANGERED,
+                        1 => ORANGERED,
+                        2 => DARKRED,
+                        _ => ORANGERED,
+                    };
+
                     draw.rect()
                     .x_y(win.left() + xx + _model.cell_width, 
                         win.top() - yy
                     )
                     .w_h(_model.cell_width, _model.cell_height)
-                    .color(ORANGERED);
+                    .color(color);
                 },
-                _ => { 
-                    // draw.rect().x_y(xx-win.w()/2.0,HEIGHT_IN_CELLS as f32 - yy ).w_h(CELLS_SIZE, CELLS_SIZE).color(BLUE); 
-                },
+                _ => { },
             };
         }
     }

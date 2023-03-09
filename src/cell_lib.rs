@@ -13,7 +13,6 @@ pub enum CellType {
 
 impl CellType {
     pub fn next(&self) -> CellType {
-        println!("NEXT!");
         match self {
             CellType::Void => CellType::Sand,
             CellType::Sand => CellType::Mite,
@@ -47,7 +46,7 @@ static DOWN: i32 = 1;
 
 
 impl Cell {
-    pub fn update(self, mut api: Api) {
+    pub fn update(self, api: Api) {
         match self.cell_type {
             CellType::Sand => self.update_sand(api),
             CellType::Mite => self.update_mite(api),
@@ -60,14 +59,6 @@ impl Cell {
         let down_neighbor = api.get_rel(0, DOWN);
         let dl_neighbor = api.get_rel(LEFT, DOWN);
         let dr_neighbor = api.get_rel(RIGHT, DOWN);
-
-        let neighbors_to_check = [0, LEFT, RIGHT];
-
-        // Get random neighbor
-        // Check condition for that neighbor
-        // If condition is met, swap with that neighbor
-        // If condition is not met, check next neighbor
-        // If no conditions are met, do nothing
 
         let mut rng = rand::thread_rng();
 
@@ -124,70 +115,130 @@ impl Cell {
     }
 
     fn update_mite(self, mut api: Api) {
-        let down_neighbor = api.get_rel(0, 1);
-        let dr_neighbor = api.get_rel(1, 1);
+        let down_neighbor = api.get_rel(0, DOWN);
+        let dr_neighbor = api.get_rel(RIGHT, DOWN);
+        let dl_neighbor = api.get_rel(LEFT, DOWN);
 
-        if down_neighbor.cell_type == CellType::Sand {
-            api.swap_cell(self, RIGHT, DOWN);
-        } else {
-            let dl_neighbor = api.get_rel(-1, 1);
-            if dl_neighbor.cell_type == CellType::Sand {
-                api.set_rel(-1,1,self); 
-            } else  {
-                if dr_neighbor.cell_type == CellType::Sand {
-                    api.set_rel(1,1,self); 
+        let mut rng = rand::thread_rng();
+
+        // 1 in 3 chance that the cell will try to move diagonally
+        let rand_num = rng.gen_range(0..3);
+        if rand_num == 0 {
+            let rand_bool = rng.gen_bool(0.5);
+            if rand_bool {
+                // Try to move diagonally, starting with left
+                if dl_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Void {
+                    api.swap_cell(self, LEFT, DOWN);
+                } else  {
+                    if dr_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Void {
+                        api.swap_cell(self, RIGHT, DOWN);
+                    }
+                }
+            } else {
+                // Try to move diagonally, starting with right
+                if dr_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Void {
+                    api.swap_cell(self, RIGHT, DOWN);
+                } else  {
+                    if dl_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Void {
+                        api.swap_cell(self, LEFT, DOWN);
+                    }
+                }
+            }
+        } else {           
+            if down_neighbor.cell_type == CellType::Void {
+                api.swap_cell(self, 0, DOWN);
+            } else {
+                let rand_bool = rng.gen_bool(0.5);
+
+                if rand_bool {
+                    // Down left first
+                    if dl_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Sand {
+                        api.swap_cell(self, LEFT, DOWN);
+                    } else  {
+                        if dr_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Sand {
+                            api.swap_cell(self, RIGHT, DOWN);
+                        }
+                    }        
+                } else {
+                    // Down right first
+                    if dr_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Sand {
+                        api.swap_cell(self, RIGHT, DOWN);
+                    } else  {
+                        if dl_neighbor.cell_type == CellType::Void && down_neighbor.cell_type == CellType::Sand {
+                            api.swap_cell(self, LEFT, DOWN);
+                        }
+                    }
                 }
             }
         }
+        
+        let rand_num = rng.gen_range(0..100);
+        
+        match rand_num {
+            
+            r if r > 20 && r < 25 => {
+                // Find a sand cell neighbor, if possible
+                let (x,y) = api.get_random_neighbor_coords();
+                let neighbor = api.get_rel(x,y);
+
+                match neighbor.cell_type {
+                    CellType::Sand => {
+                        // Eat it, making another mite
+                        api.set_rel(x, y, self);
+                    }
+                    _ => {}
+                }
+            },
+            _ => {}
+        }
+
     }
 
 }
 
 //=======================================================================================
 
-// Definition of CellBehavior<T> superclass, does not need to contain next or prev
-trait CellBehavior<T> {
-    fn update(&mut self, _api: Api);
-}
+// // Definition of CellBehavior<T> superclass, does not need to contain next or prev
+// trait CellBehavior<T> {
+//     fn update(&mut self, _api: Api);
+// }
 
-// Implement CellBehavior<T> for CellType
-impl CellBehavior<Cell> for CellType {
-    fn update(&mut self, _api: Api) {}
-}
+// trait Falls<T> : CellBehavior<T>{
+//     fn update(self, _api: Api);
+//     fn fall(self, _api: Api);
+// }
 
-trait Falls<T> : CellBehavior<T>{
-    fn update(self, _api: Api);
-    fn fall(self, _api: Api);
-}
+// impl<T> Falls<T> for CellType
+// where T:CellBehavior<T>, CellType:CellBehavior<T>
+//  {
+//     fn update(self, _api: Api) {
+//         self.fall(_api);
+//     }
 
-impl<T> Falls<T> for CellType
-where T:CellBehavior<T>, CellType:CellBehavior<T>
- {
-    fn update(self, _api: Api) {
-        self.fall(_api);
-    }
+//     fn fall(self, _api: Api) {
+//         println!("Falling!");
+//     }
+// }
 
-    fn fall(self, _api: Api) {
-        println!("Falling!");
-    }
-}
+// // #[derive(Falls)]
+// // struct 
 
-// create trait and default implementation for Solid<T>
-trait Solid<T> : CellBehavior<T>{
-    fn update(&mut self, _api: Api) {
-        println!("Solid!");
-    }
-}
+// // create trait and default implementation for Solid<T>
+// trait Solid<T> : CellBehavior<T>{
+//     fn update(&mut self, _api: Api) {
+//         println!("Solid!");
+//     }
+// }
 
-impl<T> CellBehavior<T> for CellType
-where T:
-    CellBehavior<T>, 
-    CellType:CellBehavior<T>
- {
-    fn update(&mut self, _api: Api) {
-        println!("Solid!");
-    }
-}
+// impl<T> CellBehavior<T> for CellType
+// where T:
+//     CellBehavior<T>, 
+//     CellType:CellBehavior<T>
+// {
+//     fn update(&mut self, _api: Api) {
+//         println!("Solid!");
+//     }
+// }
 
 
 //=======================================================================================
@@ -202,13 +253,6 @@ pub static BLANK_CELL: Cell = Cell {
 
 pub static STONE_CELL: Cell = Cell {
     cell_type: CellType::Stone,
-    data1: 0,
-    data2: 0,
-    updated: false,
-};
-
-pub static MITE_CELL: Cell = Cell {
-    cell_type: CellType::Mite,
     data1: 0,
     data2: 0,
     updated: false,
